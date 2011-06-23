@@ -92,40 +92,9 @@ var Color = (function(undefined) {
     return int2hex(this.r, 2) + int2hex(this.g, 2) + int2hex(this.b, 2);
   });
 
+  /////
+  // Hue / Sat / Lum, also Chroma
   // see http://en.wikipedia.org/wiki/HSL_color_space
-  getter(proto, 'hsl', function() {
-    var R = this.r, G = this.g, B = this.b
-      , max = Math.max(R,G,B)
-      , min = Math.min(R,G,B)
-      , chroma = max - min
-      , lum = (max + min) / 2
-      , hue
-      , sat
-    ;
-    
-    if (chroma === 0) {
-      hue = 0;
-    }
-    else if (M === R) {
-      hue = (G - B) / chroma;
-    }
-    else if (M === G) {
-      hue = 2 + (B - R) / chroma;
-    }
-    else if (M === B) {
-      hue = 4 + (R - G) / chroma;
-    }
-    hue = Math.floor(hue * 256);
-
-    if (lum < 0.5) {
-      sat = chroma / (2 * lum);
-    }
-    else {
-      sat = chroma / (2 - 2 * lum);
-    }
-
-    return { h: hue, s: sat, l: lum }
-  });
 
   getter(proto, 'chroma', function() {
     var R = this.r, G = this.g, B = this.b;
