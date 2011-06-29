@@ -2,31 +2,21 @@ var Color = (function(undefined) {
 
   // -*- private functions -*- //
 
-  //////
-  // defines an accessor method for a given
-  // property.  Example:
-  // 
-  //    var foo = { a: accessor('b') };
-  //    // setter
-  //    foo.a(1) // => 1
-  //    // sets the property
-  //    foo.b // => 1
-  //    // getter
-  //    foo.a() // => 1
+  var CACHE_KEY = '[[cache]]'
+
   function cache(prop, fn) {
     return function() {
-      if (prop in this) return this[prop];
+      var cache = this[CACHE_KEY] || (this[CACHE_KEY] = {});
+      if (prop in cache) return cache[prop];
 
-      return this[prop] = fn.apply(this, arguments);
+      return cache[prop] = fn.apply(this, arguments);
     }
   }
 
   // defines a cached getter for a pseudo-property
   function getter(obj, prop, fn) {
-    obj[prop] = cache('_'+prop, fn);
+    obj[prop] = cache(prop, fn);
   }
-
-  var hexInitCharCode = 'a'.charCodeAt(0);
 
   function hex2int(hex) {
     return parseInt(hex, 16);
@@ -60,14 +50,11 @@ var Color = (function(undefined) {
 
     // pre-calculated cached values :)
     if (typeof extras === 'object') {
-      for (var prop in extras) {
-        if (extras.hasOwnProperty(prop)) {
-          this['_'+prop] = extras[prop];
-        }
-      }
+      this[CACHE_KEY] = extras;
     }
   }
 
+  // -*- constructor methods -*- //
   Color.hex = function(hex) {
     var red   = hex2int(hex.slice(0,2))
       , green = hex2int(hex.slice(2,4))
@@ -77,16 +64,44 @@ var Color = (function(undefined) {
     return new Color(red, green, blue, {hex: hex})
   }
 
+  Color.rgb = function(red, green, blue) {
+    return new Color(red, green, blue);
+  }
+
+  Color.hsl = function(hue, sat, lum) {
+    var cache = { hue: hue, sat: sat, lum: lum };
+
+    if (sat === 0) {
+      return new Color(lum, lum, lum, cache);
+    }
+
+    // TODO Figure out how to do this so it makes sense.
+    // All the implementations I've found so far kind of suck,
+    // and I don't quite understand how to do it yet.
+    return Color.white; // not actually white :)
+  };
+
   var proto = Color.prototype = {
     red:   function() { return this.r },
     green: function() { return this.g },
     blue:  function() { return this.b }
   }
 
+  // -*- private instance methods -*- //
+  function max(self) {
+    return Math.max(self.r, self.g, self.b);
+  }
+
+  function min(self) {
+    return Math.min(self.r, self.g, self.b);
+  }
+
+  function mid(self) {
+    return (self.r + self.g + self.b) - (max(self) + min(self));
+  }
+  
+  // -*- cached instance methods -*- //
   getter(proto, 'rgb', function() { return [this.r, this.g, this.b]; });
-  getter(proto, 'toString', function() { 
-    return '[Color #'+this.hex()+']';
-  });
 
   getter(proto, 'hex', function() {
     return int2hex(this.r, 2) + int2hex(this.g, 2) + int2hex(this.b, 2);
@@ -97,14 +112,13 @@ var Color = (function(undefined) {
   // see http://en.wikipedia.org/wiki/HSL_color_space
 
   getter(proto, 'chroma', function() {
-    var R = this.r, G = this.g, B = this.b;
-    return Math.max(R,G,B) - Math.min(R,G,B);
+    return max(this) - min(this);
   });
 
   getter(proto, 'hue', function() {
     var R = this.r, G = this.g, B = this.b
       , chroma = this.chroma()
-      , max = Math.max(R,G,B)
+      , max = max(this)
       , hue
     ;
     
@@ -128,29 +142,33 @@ var Color = (function(undefined) {
   getter(proto, 'sat', function() {
     var chroma = this.chroma()
       , lum = this.lum()
-      , sat
+      , sat = 128 * chroma
     ;
 
     if (lum === 0) {
       sat = 0;
     }
     else if (lum < 128) {
-      sat = 128 * chroma / lum;
+      sat /= lum;
     }
     else {
-      sat = 128 * chroma / (256 - lum);
+      sat /= (256 - lum);
     }
 
     return Math.floor(sat);
   });
 
   getter(proto, 'lum', function() {
-    var R = this.r, G = this.g, B = this.b;
-    return Math.floor(0.5 * (Math.max(R,G,B) + Math.min(R,G,B)));
+    return Math.floor(0.5 * (max(this) + min(this)));
   });
 
+  // -*- uncached methods -*- //
+  proto.toString = function() {
+    return '[Color #'+this.hex()+']';
+  };
+
   proto.hsl = function hsl() {
-    return { h: this.hue(), s: this.sat(), l: this.lum() };
+    return [this.hue(), this.sat(), this.lum()];
   };
 
   getter(proto, 'toNumber', function() {
