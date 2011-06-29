@@ -99,7 +99,7 @@ var Color = (function(undefined) {
   function mid(self) {
     return (self.r + self.g + self.b) - (max(self) + min(self));
   }
-  
+
   // -*- cached instance methods -*- //
   getter(proto, 'rgb', function() { return [this.r, this.g, this.b]; });
 
@@ -121,7 +121,7 @@ var Color = (function(undefined) {
       , max = max(this)
       , hue
     ;
-    
+
     if (chroma === 0) {
       hue = 0;
     }
