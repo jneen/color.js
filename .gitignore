@@ -1,1 +1,5 @@
+# vim swaps
 .*.sw[a-z]
+
+# built files
+build/*
