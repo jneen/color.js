@@ -1,22 +1,25 @@
 SOURCE_DIR = lib
 LIB_NAME = color
 
-FILES = \
+SRC = \
 ${SOURCE_DIR}/color.js
 
 BUILD_DIR = ./build
 BUILD_FILE = ${BUILD_DIR}/${LIB_NAME}.js
 MINIFIED_BUILD_FILE = ${BUILD_DIR}/${LIB_NAME}.min.js
 
-all: cat minify
+all: minify
 
-cat:
+${BUILD_FILE}: ${SRC}
 	[ -d "${BUILD_DIR}" ] || mkdir "${BUILD_DIR}"
-	cat ${FILES} > "${BUILD_FILE}"
+	cat ${SRC} > "${BUILD_FILE}"
 
-minify: cat
-	which uglifyjs >/dev/null && \
-    uglifyjs "${BUILD_FILE}" > "${MINIFIED_BUILD_FILE}"
+${MINIFIED_BUILD_FILE}: ${BUILD_FILE}
+	uglifyjs "${BUILD_FILE}" > "${MINIFIED_BUILD_FILE}"
 
-lol:
-	@@echo "LOL!"
+.PHONY: minify
+minify: ${MINIFIED_BUILD_FILE}
+
+.PHONY: test
+test: ${BUILD_FILE}
+	NODE_PATH=${BUILD_DIR} node test/test.js
